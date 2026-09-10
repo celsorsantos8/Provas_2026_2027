@@ -39,8 +39,9 @@ def sync_expired_to_history(df_main, df_historico):
     if df_main.empty or 'Data' not in df_main.columns:
         return df_main, df_historico, 0
 
-    today = date.today()
-    parsed_dates = pd.to_datetime(df_main['Data'], errors='coerce').dt.date
+    # Carimbo temporal compatível a 100% com o pandas (meia-noite de hoje)
+    today = pd.Timestamp.today().normalize()
+    parsed_dates = pd.to_datetime(df_main['Data'], errors='coerce')
 
     expired_mask = (parsed_dates.notnull()) & (parsed_dates < today)
     expired_entries = df_main[expired_mask]
@@ -122,7 +123,7 @@ with tab1:
             submeter = st.form_submit_button("Confirmar Inscrição")
 
             if submeter:
-                data_prova_dt = pd.to_datetime(p_data, errors='coerce').date()
+                data_prova_dt = pd.to_datetime(p_data, errors='coerce')
                 nova_linha = pd.DataFrame([{
                     'Prova': prova_sel,
                     'Atleta': atleta_sel,
@@ -133,7 +134,7 @@ with tab1:
                     'Link': p_link
                 }])
 
-                if pd.notnull(data_prova_dt) and data_prova_dt < date.today():
+                if pd.notnull(data_prova_dt) and data_prova_dt < pd.Timestamp.today().normalize():
                     df_historico = pd.concat([df_historico, nova_linha], ignore_index=True)
                     conn.update(worksheet="Historico", data=df_historico)
                     st.warning("⚠️ Esta prova já passou, pelo que foi arquivada diretamente no Histórico.")
