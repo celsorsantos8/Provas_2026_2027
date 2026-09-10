@@ -51,8 +51,8 @@ def sync_expired_to_history(df_main, df_historico):
         df_main = df_main[~expired_mask].reset_index(drop=True)
 
         # Atualizar no Google Sheets
-        conn.update(worksheet="Main", data=df_main)
-        conn.update(worksheet="Historico", data=df_historico)
+        conn.update(worksheet="Historico", data=df_historico.fillna("").astype(str))
+        conn.update(worksheet="Historico", data=df_historico.fillna("").astype(str))
         return df_main, df_historico, len(expired_entries)
 
     return df_main, df_historico, 0
@@ -136,11 +136,11 @@ with tab1:
 
                 if pd.notnull(data_prova_dt) and data_prova_dt < pd.Timestamp.today().normalize():
                     df_historico = pd.concat([df_historico, nova_linha], ignore_index=True)
-                    conn.update(worksheet="Historico", data=df_historico)
+                    conn.update(worksheet="Historico", data=df_historico.fillna("").astype(str))
                     st.warning("⚠️ Esta prova já passou, pelo que foi arquivada diretamente no Histórico.")
                 else:
                     df_main = pd.concat([df_main, nova_linha], ignore_index=True)
-                    conn.update(worksheet="Main", data=df_main)
+                    conn.update(worksheet="Historico", data=df_historico.fillna("").astype(str))
                     st.success(f"✅ Inscrição de {atleta_sel} gravada com sucesso!")
                 st.rerun()
 
