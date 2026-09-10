@@ -65,7 +65,7 @@ provas_disponiveis = df_provas['PROVA'].dropna().unique().tolist() if ('PROVA' i
 # Cabeçalho com Logótipo e Título Lado a Lado
 col_logo, col_titulo = st.columns([1, 6], vertical_alignment="center")
 with col_logo:
-    st.image("logo_GTS_White.png", width=15)  # Ajusta a largura se necessário
+    st.image("logo_GTS_White.png", width=85)  # Ajusta a largura se necessário
 with col_titulo:
     st.title("GRCorredoura Trail Team")
     st.caption("Gestão de Provas de Equipa 2026/2027")
