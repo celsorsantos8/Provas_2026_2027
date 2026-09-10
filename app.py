@@ -15,7 +15,10 @@ FILE_HISTORICO = 'Provas_de_Equipa_2026_2027_Historico.csv'
 # Função para carregar e limpar dados
 def load_csv(filename):
     if os.path.exists(filename):
-        df = pd.read_csv(filename)
+        # sep=None e engine='python' detetam automaticamente se é vírgula (,) ou ponto e vírgula (;)
+        df = pd.read_csv(filename, sep=None, engine='python', encoding='utf-8-sig')
+        # Remove espaços em branco acidentais antes ou depois dos nomes das colunas
+        df.columns = df.columns.astype(str).str.strip()
         return df.dropna(how='all')
     return pd.DataFrame()
 
