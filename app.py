@@ -184,6 +184,7 @@ with tab2:
         st.dataframe(
             df_hist_view,
             use_container_width=True,
+            hide_index=True,
             column_config={"Link": st.column_config.LinkColumn("Link")}
         )
     else:
@@ -195,6 +196,7 @@ with tab3:
     st.dataframe(
         df_provas,
         use_container_width=True,
+        hide_index=True,
         column_config={"Link": st.column_config.LinkColumn("Link Oficial")}
     )
 
