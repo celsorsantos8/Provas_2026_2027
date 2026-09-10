@@ -91,7 +91,7 @@ st.title("🏃 Gestão de Provas de Equipa")
 if moved_count > 0:
     st.info(f"ℹ️ {moved_count} prova(s) com data anterior a hoje foram transferidas para o Histórico.")
 
-tab1, tab2, tab3 = st.tabs(["📅 Provas Agendadas (Main)", "📜 Histórico", "📋 Catálogo de Provas"])
+tab1, tab2, tab3 = st.tabs(["📅 Provas Agendadas", "📜 Histórico", "📋 Catálogo de Provas"])
 
 # --- TAB 1: MAIN ---
 with tab1:
