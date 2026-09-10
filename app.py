@@ -3,13 +3,10 @@ import pandas as pd
 from datetime import date
 from streamlit_gsheets import GSheetsConnection
 
-# Configuração da página
 st.set_page_config(page_title="Gestão de Provas de Equipa", page_icon="🏃", layout="wide")
 
-# Inicializar ligação ao Google Sheets configurada no Secrets
 conn = st.connection("gsheets", type=GSheetsConnection)
 
-# Colunas padrão
 COLS_MAIN = ['Prova', 'Atleta', 'Distância', 'Data', 'Local', 'Prova de Equipa', 'Link']
 COLS_PROVAS = ['PROVA', 'DATA', 'LOCAL', 'PROVA DE EQUIPA', 'Link']
 COLS_INFO = ['Atleta', 'Distancia']
@@ -24,22 +21,20 @@ def carregar_aba(nome_aba, colunas_padrao):
                 if col not in df.columns:
                     df[col] = ""
             return df[colunas_padrao]
-    except Exception:
-        pass
+    except Exception as e:
+        st.warning(f"A carregar aba '{nome_aba}': {e}")
     return pd.DataFrame(columns=colunas_padrao)
 
-# Carregar dados diretamente da folha Google
+# Certifica-te de que estes nomes correspondem exatamente aos nomes das abas no Google Sheets
 df_main = carregar_aba("Main", COLS_MAIN)
 df_provas = carregar_aba("Provas", COLS_PROVAS)
 df_info = carregar_aba("Info", COLS_INFO)
 df_historico = carregar_aba("Historico", COLS_MAIN)
 
-# Sincronização automática para o Histórico (datas ultrapassadas)
 def sync_expired_to_history(df_main, df_historico):
     if df_main.empty or 'Data' not in df_main.columns:
         return df_main, df_historico, 0
 
-    # Carimbo temporal compatível a 100% com o pandas (meia-noite de hoje)
     today = pd.Timestamp.today().normalize()
     parsed_dates = pd.to_datetime(df_main['Data'], errors='coerce')
 
@@ -50,8 +45,8 @@ def sync_expired_to_history(df_main, df_historico):
         df_historico = pd.concat([df_historico, expired_entries], ignore_index=True)
         df_main = df_main[~expired_mask].reset_index(drop=True)
 
-        # Atualizar no Google Sheets
-        conn.update(worksheet="Historico", data=df_historico.fillna("").astype(str))
+        # Atualiza a aba Main e a aba Historico
+        conn.update(worksheet="Main", data=df_main.fillna("").astype(str))
         conn.update(worksheet="Historico", data=df_historico.fillna("").astype(str))
         return df_main, df_historico, len(expired_entries)
 
@@ -59,12 +54,10 @@ def sync_expired_to_history(df_main, df_historico):
 
 df_main, df_historico, moved_count = sync_expired_to_history(df_main, df_historico)
 
-# Listas auxiliares a partir da aba Info
 atletas_list = sorted(df_info['Atleta'].dropna().astype(str).str.strip().unique().tolist()) if 'Atleta' in df_info.columns else []
 distancias_list = sorted(df_info['Distancia'].dropna().astype(str).str.strip().unique().tolist()) if 'Distancia' in df_info.columns else []
 provas_disponiveis = df_provas['PROVA'].dropna().unique().tolist() if ('PROVA' in df_provas.columns and not df_provas.empty) else []
 
-# --- INTERFACE ---
 st.title("🏃 Gestão de Provas de Equipa")
 
 if moved_count > 0:
@@ -72,7 +65,7 @@ if moved_count > 0:
 
 tab1, tab2, tab3 = st.tabs(["📅 Provas Agendadas", "📜 Histórico", "📋 Catálogo de Provas"])
 
-# --- TAB 1: MAIN ---
+# TAB 1: MAIN
 with tab1:
     st.subheader("Inscrições Atuais da Equipa")
 
@@ -140,11 +133,11 @@ with tab1:
                     st.warning("⚠️ Esta prova já passou, pelo que foi arquivada diretamente no Histórico.")
                 else:
                     df_main = pd.concat([df_main, nova_linha], ignore_index=True)
-                    conn.update(worksheet="Historico", data=df_historico.fillna("").astype(str))
+                    conn.update(worksheet="Main", data=df_main.fillna("").astype(str))
                     st.success(f"✅ Inscrição de {atleta_sel} gravada com sucesso!")
                 st.rerun()
 
-# --- TAB 2: HISTÓRICO ---
+# TAB 2: HISTÓRICO
 with tab2:
     st.subheader("Registo Histórico de Provas Concluídas")
 
@@ -171,7 +164,7 @@ with tab2:
     else:
         st.info("Nenhuma prova registada no histórico.")
 
-# --- TAB 3: CATÁLOGO DE PROVAS ---
+# TAB 3: CATÁLOGO DE PROVAS
 with tab3:
     st.subheader("Provas Oficiais Disponíveis no Calendário")
     st.dataframe(
@@ -204,7 +197,7 @@ with tab3:
                     'Link': n_link.strip()
                 }])
                 df_provas = pd.concat([df_provas, nova_p], ignore_index=True)
-                conn.update(worksheet="Provas", data=df_provas)
+                conn.update(worksheet="Provas", data=df_provas.fillna("").astype(str))
                 st.success(f"Prova '{n_nome}' adicionada ao catálogo com sucesso!")
                 st.rerun()
             else:
