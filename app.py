@@ -109,7 +109,7 @@ with tab1:
     if filtro_prova != "Todas":
         df_view = df_view[df_view['Prova'] == filtro_prova]
 
- st.dataframe(
+    st.dataframe(
         df_view,
         use_container_width=True,
         hide_index=True,
