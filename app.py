@@ -3,7 +3,11 @@ import pandas as pd
 from datetime import date
 from streamlit_gsheets import GSheetsConnection
 
-st.set_page_config(page_title="Gestão de Provas de Equipa", page_icon="🏃", layout="wide")
+st.set_page_config(
+    page_title="GRCorredoura Trail Team",
+    page_icon="logo_GTS_White.png",
+    layout="wide"
+)
 
 conn = st.connection("gsheets", type=GSheetsConnection)
 
@@ -58,7 +62,13 @@ atletas_list = sorted(df_info['Atleta'].dropna().astype(str).str.strip().unique(
 distancias_list = sorted(df_info['Distancia'].dropna().astype(str).str.strip().unique().tolist()) if 'Distancia' in df_info.columns else []
 provas_disponiveis = df_provas['PROVA'].dropna().unique().tolist() if ('PROVA' in df_provas.columns and not df_provas.empty) else []
 
-st.title("🏃 Gestão de Provas de Equipa")
+# Cabeçalho com Logótipo e Título Lado a Lado
+col_logo, col_titulo = st.columns([1, 6], vertical_alignment="center")
+with col_logo:
+    st.image("logo_GTS_White.png", width=85)  # Ajusta a largura se necessário
+with col_titulo:
+    st.title("GRCorredoura Trail Team")
+    st.caption("Gestão de Provas de Equipa 2026/2027")
 
 if moved_count > 0:
     st.info(f"ℹ️ {moved_count} prova(s) com data anterior a hoje foram transferidas para o Histórico.")
