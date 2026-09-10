@@ -13,14 +13,38 @@ FILE_INFO = 'Provas_de_Equipa_2026_2027_Info.csv'
 FILE_HISTORICO = 'Provas_de_Equipa_2026_2027_Historico.csv'
 
 # Função para carregar e limpar dados
+COLS_PADRAO_MAIN = ['Prova', 'Atleta', 'Distância', 'Data', 'Local', 'Prova de Equipa', 'Link']
+
 def load_csv(filename):
     if os.path.exists(filename):
-        # sep=None e engine='python' detetam automaticamente se é vírgula (,) ou ponto e vírgula (;)
-        df = pd.read_csv(filename, sep=None, engine='python', encoding='utf-8-sig')
-        # Remove espaços em branco acidentais antes ou depois dos nomes das colunas
-        df.columns = df.columns.astype(str).str.strip()
-        return df.dropna(how='all')
-    return pd.DataFrame()
+        try:
+            df = pd.read_csv(filename, sep=None, engine='python', encoding='utf-8-sig')
+            df.columns = df.columns.astype(str).str.strip()
+
+            # Se a primeira linha contiver os cabeçalhos verdadeiros (caso tenha havido desfasamento)
+            if 'Unnamed: 3' in df.columns or 'Prova' not in df.columns:
+                # Procura a linha que tem 'Prova' ou 'Atleta'
+                for idx, row in df.iterrows():
+                    if 'Prova' in row.values and 'Atleta' in row.values:
+                        df.columns = [str(val).strip() for val in row.values]
+                        df = df.iloc[idx + 1:].reset_index(drop=True)
+                        break
+
+            # Limpar colunas Unnamed e linhas vazias
+            df = df.loc[:, ~df.columns.str.startswith('Unnamed')]
+            df = df.dropna(how='all')
+
+            # Se for o ficheiro Main ou Historico, garante apenas as 7 colunas certas na ordem exata
+            if filename in [FILE_MAIN, FILE_HISTORICO]:
+                for c in COLS_PADRAO_MAIN:
+                    if c not in df.columns:
+                        df[c] = ""
+                df = df[COLS_PADRAO_MAIN]
+
+            return df
+        except Exception:
+            pass
+    return pd.DataFrame(columns=DEFAULT_COLS.get(filename, []))
 
 def save_csv(df, filename):
     df.to_csv(filename, index=False)
