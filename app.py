@@ -109,10 +109,11 @@ with tab1:
     if filtro_prova != "Todas":
         df_view = df_view[df_view['Prova'] == filtro_prova]
 
-    st.dataframe(
+ st.dataframe(
         df_view,
         use_container_width=True,
-        column_config={"Link": st.column_config.LinkColumn("Inscrição / Informações")}
+        hide_index=True,
+        column_config={"Link": st.column_config.LinkColumn("Inscrição / Informações")} if 'Link' in df_view.columns else None
     )
 
     st.markdown("---")
