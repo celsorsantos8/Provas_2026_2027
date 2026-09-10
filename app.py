@@ -121,20 +121,19 @@ with tab1:
     with st.form("form_add_prova_atleta", clear_on_submit=True):
         col_a, col_b, col_c = st.columns(3)
         with col_a:
-            atleta_sel = st.selectbox("Atleta (de Info.csv):", atletas_list)
+            atleta_sel = st.selectbox("Atleta:", atletas_list)
         with col_b:
-            prova_sel = st.selectbox("Prova (de Provas.csv):", provas_disponiveis)
+            prova_sel = st.selectbox("Prova:", provas_disponiveis)
         with col_c:
-            distancia_sel = st.selectbox("Tipo de Prova / Distância (de Info.csv):", distancias_list)
+            distancia_sel = st.selectbox("Tipo de Prova / Distância:", distancias_list if distancias_list else ["Geral"])
 
-        # Informações pré-preenchidas a partir da prova selecionada
+        # Obter dados da prova selecionada nos bastidores
         info_prova = df_provas[df_provas['PROVA'] == prova_sel]
         if not info_prova.empty:
-            p_data = str(info_prova.iloc[0]['DATA'])
-            p_local = str(info_prova.iloc[0]['LOCAL'])
-            p_equipa = str(info_prova.iloc[0]['PROVA DE EQUIPA'])
-            p_link = str(info_prova.iloc[0]['Link'])
-            st.caption(f"📍 **Local:** {p_local} | 📅 **Data:** {p_data} | 👥 **Prova de Equipa:** {p_equipa}")
+            p_data = str(info_prova.iloc[0].get('DATA', ''))
+            p_local = str(info_prova.iloc[0].get('LOCAL', ''))
+            p_equipa = str(info_prova.iloc[0].get('PROVA DE EQUIPA', 'Não'))
+            p_link = str(info_prova.iloc[0].get('Link', ''))
         else:
             p_data, p_local, p_equipa, p_link = "", "", "Não", ""
 
