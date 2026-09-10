@@ -63,9 +63,9 @@ distancias_list = sorted(df_info['Distancia'].dropna().astype(str).str.strip().u
 provas_disponiveis = df_provas['PROVA'].dropna().unique().tolist() if ('PROVA' in df_provas.columns and not df_provas.empty) else []
 
 # Cabeçalho com Logótipo e Título Lado a Lado
-col_logo, col_titulo = st.columns([1, 6], vertical_alignment="center")
+col_logo, col_titulo = st.columns([0.8, 8], vertical_alignment="center")
 with col_logo:
-    st.image("logo_GTS_White.png", width=85)  # Ajusta a largura se necessário
+    st.image("logo_GTS_White.png", width=90)  # Ajusta a largura se necessário
 with col_titulo:
     st.title("GRCorredoura Trail Team")
     st.caption("Gestão de Provas de Equipa 2026/2027")
