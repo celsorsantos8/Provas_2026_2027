@@ -91,7 +91,7 @@ atletas_list = sorted(df_info['Atleta'].dropna().astype(str).str.strip().unique(
 distancias_list = sorted(df_info['Distancia'].dropna().astype(str).str.strip().unique().tolist()) if 'Distancia' in df_info.columns else []
 
 # --- CABEÇALHO ---
-col_logo, col_titulo = st.columns([0.8, 4], vertical_alignment="center")
+col_logo, col_titulo = st.columns([0.8, 8], vertical_alignment="center", gap="small")
 with col_logo:
     if os.path.exists("logo_GRC_White.png"):
         st.image("logo_GRC_White.png", width=85)
