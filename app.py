@@ -7,7 +7,7 @@ import os
 # Configuração da página e separador do browser
 st.set_page_config(
     page_title="GRCorredoura Trail Team",
-    page_icon="logo_GRC_White.png" if os.path.exists("logo_GRC_White.png") else "🏃",
+    page_icon="logo_GTS_White.png" if os.path.exists("logo_GTS_White.png") else "🏃",
     layout="wide"
 )
 
@@ -93,8 +93,8 @@ distancias_list = sorted(df_info['Distancia'].dropna().astype(str).str.strip().u
 # --- CABEÇALHO ---
 col_logo, col_titulo = st.columns([0.8, 8], vertical_alignment="center", gap="small")
 with col_logo:
-    if os.path.exists("logo_GRC_White.png"):
-        st.image("logo_GRC_White.png", width=85)
+    if os.path.exists("logo_GTS_White.png"):
+        st.image("logo_GTS_White.png", width=85)
 with col_titulo:
     st.title("GRCorredoura Trail Team")
     st.caption("Gestão de Provas de Equipa 2026/2027")
