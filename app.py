@@ -2,15 +2,19 @@ import streamlit as st
 import pandas as pd
 from datetime import date
 from streamlit_gsheets import GSheetsConnection
+import os
 
+# Configuração da página e separador do browser
 st.set_page_config(
     page_title="GRCorredoura Trail Team",
-    page_icon="logo_GTS_White.png",
+    page_icon="logo_GRC_White.png" if os.path.exists("logo_GRC_White.png") else "🏃",
     layout="wide"
 )
 
+# Inicializar ligação ao Google Sheets
 conn = st.connection("gsheets", type=GSheetsConnection)
 
+# Colunas padrão
 COLS_MAIN = ['Prova', 'Atleta', 'Distância', 'Data', 'Local', 'Prova de Equipa', 'Link']
 COLS_PROVAS = ['PROVA', 'DATA', 'LOCAL', 'PROVA DE EQUIPA', 'Link']
 COLS_INFO = ['Atleta', 'Distancia']
@@ -21,20 +25,30 @@ def carregar_aba(nome_aba, colunas_padrao):
         if df is not None and not df.empty:
             df.columns = df.columns.astype(str).str.strip()
             df = df.dropna(how='all')
+
+            # Elimina linhas repetidas ou com cabeçalho colado
+            if 'Prova' in df.columns:
+                df = df[df['Prova'].astype(str).str.strip().str.lower() != 'prova']
+            if 'PROVA' in df.columns:
+                df = df[df['PROVA'].astype(str).str.strip().str.lower() != 'prova']
+            if 'Atleta' in df.columns:
+                df = df[df['Atleta'].astype(str).str.strip().str.lower() != 'atleta']
+
             for col in colunas_padrao:
                 if col not in df.columns:
                     df[col] = ""
-            return df[colunas_padrao]
+            return df[colunas_padrao].reset_index(drop=True)
     except Exception as e:
         st.warning(f"A carregar aba '{nome_aba}': {e}")
     return pd.DataFrame(columns=colunas_padrao)
 
-# Certifica-te de que estes nomes correspondem exatamente aos nomes das abas no Google Sheets
+# Carregar abas da folha de cálculo
 df_main = carregar_aba("Main", COLS_MAIN)
 df_provas = carregar_aba("Provas", COLS_PROVAS)
 df_info = carregar_aba("Info", COLS_INFO)
 df_historico = carregar_aba("Historico", COLS_MAIN)
 
+# Sincronização automática para o Histórico (datas ultrapassadas)
 def sync_expired_to_history(df_main, df_historico):
     if df_main.empty or 'Data' not in df_main.columns:
         return df_main, df_historico, 0
@@ -49,7 +63,7 @@ def sync_expired_to_history(df_main, df_historico):
         df_historico = pd.concat([df_historico, expired_entries], ignore_index=True)
         df_main = df_main[~expired_mask].reset_index(drop=True)
 
-        # Atualiza a aba Main e a aba Historico
+        # Atualizar no Google Sheets
         conn.update(worksheet="Main", data=df_main.fillna("").astype(str))
         conn.update(worksheet="Historico", data=df_historico.fillna("").astype(str))
         return df_main, df_historico, len(expired_entries)
@@ -58,14 +72,29 @@ def sync_expired_to_history(df_main, df_historico):
 
 df_main, df_historico, moved_count = sync_expired_to_history(df_main, df_historico)
 
+# Tratamento, ordenação e estado das provas no Catálogo
+today = pd.Timestamp.today().normalize()
+
+if not df_provas.empty and 'DATA' in df_provas.columns:
+    df_provas['DATA_dt'] = pd.to_datetime(df_provas['DATA'], errors='coerce')
+    # Validado pela data: se hoje > data da prova = Concluída (True)
+    df_provas['Concluída'] = df_provas['DATA_dt'] < today
+    # Organizado por data da mais recente para a mais antiga
+    df_provas = df_provas.sort_values(by='DATA_dt', ascending=False).reset_index(drop=True)
+    # Lista de provas que ainda estão por realizar
+    provas_futuras = df_provas[~df_provas['Concluída']]['PROVA'].dropna().unique().tolist()
+else:
+    provas_futuras = []
+
+# Listas auxiliares a partir da aba Info
 atletas_list = sorted(df_info['Atleta'].dropna().astype(str).str.strip().unique().tolist()) if 'Atleta' in df_info.columns else []
 distancias_list = sorted(df_info['Distancia'].dropna().astype(str).str.strip().unique().tolist()) if 'Distancia' in df_info.columns else []
-provas_disponiveis = df_provas['PROVA'].dropna().unique().tolist() if ('PROVA' in df_provas.columns and not df_provas.empty) else []
 
-# Cabeçalho com Logótipo e Título Lado a Lado
-col_logo, col_titulo = st.columns([0.8, 8], vertical_alignment="center")
+# --- CABEÇALHO ---
+col_logo, col_titulo = st.columns([0.8, 4], vertical_alignment="center")
 with col_logo:
-    st.image("logo_GTS_White.png", width=90)  # Ajusta a largura se necessário
+    if os.path.exists("logo_GRC_White.png"):
+        st.image("logo_GRC_White.png", width=85)
 with col_titulo:
     st.title("GRCorredoura Trail Team")
     st.caption("Gestão de Provas de Equipa 2026/2027")
@@ -75,7 +104,7 @@ if moved_count > 0:
 
 tab1, tab2, tab3 = st.tabs(["📅 Provas Agendadas", "📜 Histórico", "📋 Catálogo de Provas"])
 
-# TAB 1: MAIN
+# --- TAB 1: MAIN ---
 with tab1:
     st.subheader("Inscrições Atuais da Equipa")
 
@@ -102,15 +131,15 @@ with tab1:
     st.markdown("---")
     st.subheader("➕ Registar Presença numa Prova")
 
-    if not atletas_list or not provas_disponiveis:
-        st.warning("Certifique-se de que a aba 'Info' tem atletas e a aba 'Provas' tem provas registadas.")
+    if not atletas_list or not provas_futuras:
+        st.warning("Não existem atletas registados na aba 'Info' ou não há provas futuras por realizar no catálogo.")
     else:
         with st.form("form_add_prova_atleta", clear_on_submit=True):
             col_a, col_b, col_c = st.columns(3)
             with col_a:
                 atleta_sel = st.selectbox("Atleta:", atletas_list)
             with col_b:
-                prova_sel = st.selectbox("Prova:", provas_disponiveis)
+                prova_sel = st.selectbox("Prova (Por realizar):", provas_futuras)
             with col_c:
                 distancia_sel = st.selectbox("Tipo de Prova / Distância:", distancias_list if distancias_list else ["Geral"])
 
@@ -147,7 +176,7 @@ with tab1:
                     st.success(f"✅ Inscrição de {atleta_sel} gravada com sucesso!")
                 st.rerun()
 
-# TAB 2: HISTÓRICO
+# --- TAB 2: HISTÓRICO ---
 with tab2:
     st.subheader("Registo Histórico de Provas Concluídas")
 
@@ -174,14 +203,21 @@ with tab2:
     else:
         st.info("Nenhuma prova registada no histórico.")
 
-# TAB 3: CATÁLOGO DE PROVAS
+# --- TAB 3: CATÁLOGO DE PROVAS ---
 with tab3:
     st.subheader("Provas Oficiais Disponíveis no Calendário")
+    
+    colunas_exibir = ['PROVA', 'DATA', 'LOCAL', 'PROVA DE EQUIPA', 'Concluída', 'Link']
+    cols_existentes = [c for c in colunas_exibir if c in df_provas.columns]
+    
     st.dataframe(
-        df_provas,
+        df_provas[cols_existentes],
         use_container_width=True,
         hide_index=True,
-        column_config={"Link": st.column_config.LinkColumn("Link Oficial")} if 'Link' in df_provas.columns else None
+        column_config={
+            "Concluída": st.column_config.CheckboxColumn("Concluída?", help="Marcada automaticamente se a data da prova já passou."),
+            "Link": st.column_config.LinkColumn("Link Oficial")
+        }
     )
 
     st.markdown("---")
@@ -206,9 +242,13 @@ with tab3:
                     'PROVA DE EQUIPA': n_equipa,
                     'Link': n_link.strip()
                 }])
-                df_provas = pd.concat([df_provas, nova_p], ignore_index=True)
-                conn.update(worksheet="Provas", data=df_provas.fillna("").astype(str))
-                st.success(f"Prova '{n_nome}' adicionada ao catálogo com sucesso!")
+                # Manter apenas as colunas oficiais da aba Provas para gravação no Sheets
+                df_provas_salvar = df_provas[COLS_PROVAS].copy()
+                df_provas_salvar = pd.concat([df_provas_salvar, nova_p], ignore_index=True)
+                
+                # Grava diretamente na aba Provas do Google Sheets
+                conn.update(worksheet="Provas", data=df_provas_salvar.fillna("").astype(str))
+                st.success(f"✅ Prova '{n_nome}' adicionada ao catálogo e gravada no Google Sheets com sucesso!")
                 st.rerun()
             else:
                 st.error("O nome da prova é obrigatório.")
