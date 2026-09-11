@@ -121,6 +121,11 @@ with tab1:
     if filtro_prova != "Todas" and 'Prova' in df_view.columns:
         df_view = df_view[df_view['Prova'] == filtro_prova]
 
+    # Ordenar pela data da prova mais próxima de acontecer para a mais distante
+    if not df_view.empty and 'Data' in df_view.columns:
+        df_view['Data_dt'] = pd.to_datetime(df_view['Data'], errors='coerce')
+        df_view = df_view.sort_values(by=['Data_dt', 'Prova', 'Atleta'], ascending=[True, True, True]).drop(columns=['Data_dt'])
+
     st.dataframe(
         df_view,
         use_container_width=True,
